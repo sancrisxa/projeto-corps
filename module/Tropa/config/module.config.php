@@ -15,6 +15,8 @@ use Zend\Db\ResultSet\ResultSet;
 use Tropa\Model\Setor;
 use Zend\Db\TableGateway\TableGateway;
 use Zend\Session\SessionManager;
+use Tropa\Model\Lanterna;
+use Tropa\Model\LanternaTable;
 
 return [
     'router' => [
@@ -43,6 +45,17 @@ return [
     ],
     'service_manager' => [
         'factories' => [
+            LanternaTable::class => function($sm) {
+                $tableGateway = $sm->get('LanternaTableGateway');
+                $table = new LanternaTable($tableGateway);
+                return $table;
+            },
+            'LanternaTableGateway' => function ($sm) {
+                $dbAdapter = $sm->get('Zend\Db\Adapter');
+                $resultSetPrototype = new ResultSet();
+                $resultSetPrototype->setArrayObjectPrototype(new Lanterna());
+                return new TableGateway('lanterna', $dbAdapter, null, $resultSetPrototype);
+            },
             SetorTable::class => function($sm) {
                 $tableGateway = $sm->get('SetorTableGateway');
                 $table = new SetorTable($tableGateway);
@@ -54,12 +67,12 @@ return [
                 $resultSetPrototype->setArrayObjectPrototype(new Setor());
                 return new TableGateway('setor', $dbAdapter, null, $resultSetPrototype);
             },
-       ],
-        
+        ],
     ],
     'controllers' => [
         'aliases' => [
-            'setor' => Controller\SetorController::class
+            'setor' => Controller\SetorController::class,
+            'lanterna' => Controller\LanternaController::class
         ],
         'factories' => [
             Controller\IndexController::class => InvokableFactory::class,
@@ -67,6 +80,13 @@ return [
             $table = $sm->get(SetorTable::class);
             $sessionManager = new SessionManager();
             return new Controller\SetorController($table, $sessionManager);
+            },
+            Controller\LanternaController::class => function($sm)
+            {
+                $table = $sm->get(LanternaTable::class);
+                $parentTable = $sm->get(SetorTable::class);
+                $sessionManager = new SessionManager();
+                return new Controller\LanternaController($table, $parentTable, $sessionManager);
             }
         ],
     ],
